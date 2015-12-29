@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv = "Content-type" content = "text/html; charset = utf-8">
+<title>假名连连看</title>
+<script type = "text/javascript" charset = "utf-8">
+var ctx;
+
+function pageLoaded(){
+	var canvas = document.getElementById('gamecanvas');
+	// Get the 2d context for this canvas
+	ctx = canvas.getContext('2d');
+	drawmap();
+	logic.initMap();
+}
+/**
+ * 配置
+ */
+var config={
+	X_NUM:8,
+	Y_NUM:12,
+	total:96,
+	height:480,
+	width:320,
+	cellWidth:40,
+	cellHeight:40,
+	fontSize:22,
+	fontType:'MS UI Gothic',
+	//地图格子的颜色
+	mpaLineColor:"#E6E6FA",
+	selectedLineColor:"#9400D3",//选中格子后边框颜色
+	connectLineColor:"#9400D3",//选中 的格子连接线颜色
+	mpaLineWidth:1,
+};
+/**
+ * 用于连连看的填充图片，这用文字代替
+ */
+var gameContent={
+	//所有平假名共46个
+	cadidates:['あ','い','う','え','お','か','き','く','け','こ','さ','し','す','せ','そ','た','ち','つ','て','と','ま','み','む','め','も','な','に','ぬ','ね','の','は','ひ','ふ','へ','ほ','や','ゆ','よ','ら','り','る','れ','ろ','わ','を','ん'],
+	//所有片假名共46个
+	cadidates2:['ア','イ','ウ','エ','オ','カ','キ','ク','ケ','コ','サ','シ','ス','セ','ソ','タ','チ','ツ','テ','ト','マ','ミ','ム','メ','モ','ナ','ニ','ヌ','ネ','ノ','ハ','ヒ','フ','ヘ','ホ','ヤ','ユ','ヨ','ラ','リ','ル','レ','ロ','ワ','ヲ','ン'],
+
+};
+/**
+ * 算法
+ */
+var logic={
+	//地图上此位置没有图片
+	BLANK:-1,
+	contentArr: new Array(config.X_NUM),
+	/*
+	 * 由编号获取元素
+	 * 将二维组从左往右，从上到下，从0开始编号，这样（x,y）坐标点的编号为经x*(y+1),而编号为number的坐标则为（number%x,number/y）
+	 */
+	 getEleByNumber:function(number){
+		return this.contentArr[number%config.X_NUM][Math.floor(number/config.X_NUM)];
+	},
+	setEleByNumber:function(number,value){
+		if(arguments.length!=2){
+			alert("setEleByNumber:参数不合要求！");
+		}
+		this.contentArr[number%config.X_NUM][Math.floor(number/config.X_NUM)]=value;
+	},
+	/**
+	 * 在后半部分随机选取一个位置，先往后找还未设置的元素，找到后设值返回，
+	 * 否则再往前找
+	 */
+	randomPosSet:function(type){
+		var half=config.total/2;
+		var pos=Math.floor(Math.random()*half) + half+1;
+		for(var i=pos;i<config.total;i++){
+			if(this.getEleByNumber(i)==this.BLANK){//还未设值
+				this.setEleByNumber(i,type);
+				return;
+			}
+		}
+		for(var i=pos-1;i>=half;i--){
+			if(this.getEleByNumber(i)==this.BLANK){//还未设值
+				this.setEleByNumber(i,type);
+				return;
+			}
+		}
+	},
+	initMap:function(){
+		//构造表格对应的二维数组
+		for(var i=0;i<config.X_NUM;i++){
+			this.contentArr[i]=new Array(config.Y_NUM);
+			for(var j=0;j<config.Y_NUM;j++){
+				this.contentArr[i][j]=this.BLANK;
+			}
+		}//end for i
+		
+		//i是当前扫描到哪一个格，j是设置了多少对,由于randomPosSet()只在后半部分市值，所以只写j<half也可以
+		for(var i=0,j=0;j<config.total/2&&i<config.total;i++){
+			if(this.getEleByNumber(i)==this.BLANK){
+				var type=Math.floor(Math.random()*gameContent.cadidates.length);
+				this.setEleByNumber(i,type);
+				this.randomPosSet(type);
+				j++;
+			}
+		}
+		//画出各个小格的内容
+		for(var i=0;i<config.X_NUM;i++){
+			for(var j=0;j<config.Y_NUM;j++){
+				ctx.font =config.fontSize+'pt '+config.fontType;
+				var px=i*config.cellWidth+(config.cellWidth-config.fontSize)/2;
+				var py=(j+1)*config.cellHeight-+(config.cellHeight-config.fontSize)/2;
+				ctx.fillText(gameContent.cadidates[this.contentArr[i][j]],px,py);
+			}
+		}
+	},
+	sortPt:function(pt1,pt2){
+		//使p2尽可能的在p1的右下方。
+		// 先按x轴排列，相同时再按y轴
+		if(pt1.px>pt2.px){
+			var t = pt1; 
+			pt1 = pt2;
+			pt2 = t;	
+		}else if(pt1.px==pt2.px&&pt1.py>pt2.py){
+			var t = pt1; 
+			pt1 = pt2;
+			pt2 = t;	
+		}//end 排列
+		return [pt1,pt2];
+	},
+	isEmpty: function(tp){
+		if(tp.px<0||tp.px>=config.X_NUM||tp.py<0||tp.py>=config.Y_NUM){
+			return true;
+		}
+		return this.contentArr[tp.px][tp.py]==this.BLANK;
+	},
+	/**
+		将消去的两点对应的数组元素标记为空
+	*/
+	set2PointEmpty: function(pt1,pt2){
+		 this.contentArr[pt1.px][pt1.py]=this.BLANK;
+		 this.contentArr[pt2.px][pt2.py]=this.BLANK;
+	},
+	/**
+	 * 两个点是否挨着
+	 */
+	 closed:function(pt1,pt2){
+		if(Math.abs(pt1.x+pt1.y-pt2.x-pt2.y)==1){
+			return true;
+		}
+		return false;
+	},
+	//是否在同一行
+	onlineX:function(p1, p2){
+		return p1.py==p2.py;
+	},
+	//是否在同一列
+	onlineY:function(p1, p2){
+		return p1.px==p2.px;	
+	},
+	//是否在同一个行或同一列上，并且连通，两点重合也算连通
+	isLineClear:function(pt1,pt2){
+		//开始搜索前对pt1,pt2排序
+		var tempArr=this.sortPt(pt1, pt2);
+		pt1=tempArr[0];
+		pt2=tempArr[1];
+		//end 排列
+		if(this.onlineX(pt1,pt2)){
+			var y=pt1.py;
+			if(y==-1||y==config.Y_NUM){
+				return true;//如果在边框列上，小于0或等于config.X_NUM是因为构造的辅助点会位于此列上
+			}
+			for(var i=pt1.px+1;i<pt2.px;i++){
+				if(this.contentArr[i][pt1.py]!=this.BLANK){
+					return false;
+				}
+			}
+			return true;//在x轴上并且两点相邻或连通
+		}
+		if(this.onlineY(pt1,pt2)){
+			var x=pt1.px;
+			if(x==-1||x==config.X_NUM){
+				return true;//如果在边框列上，小于0或等于config.Y_NUM是因为构造的辅助点会位于此行上
+			}
+			for(var i=pt1.py+1;i<pt2.py;i++){
+				if(this.contentArr[pt1.px][i]!=this.BLANK){
+					return false;
+				}
+			}
+			return true;//在y轴上并且两点相邻或连通
+		}
+		return false;//不再同一条直线上
+	},
+	/*
+	是否是在边框上的两点并且在同一个线上，只要是就是能连通返回4个点,否则返回null
+	*/
+	borderCellPath:function(pt1,pt2){
+		if(this.onlineY(pt1,pt2)){
+			var pt3,pt4;
+			if(pt1.px==0){
+				pt3=new point(-1,pt1.py);
+				pt4=new point(-1,pt2.py);
+			}else if(pt1.px==config.X_NUM){
+				pt3=new point(pt1.px+1,pt1.py);
+				pt4=new point(pt2,px+1,pt2.py);
+			}else{//不是在边框上
+				return null;
+			}
+			return [pt1,pt3,pt4,pt2];
+		}
+		if(this.onlineX(pt1,pt2)){
+			var pt3,pt4;
+			if(pt1.py==0){
+				pt3=new point(pt1.px,-1);
+				pt4=new point(pt2.px,-1);
+			}else if(pt1.px==config.Y_NUM){
+				pt3=new point(pt1.px,pt1.py+1);
+				pt4=new point(pt2.px,pt2.py+1);
+			}else{//不是在边框上
+				return null;
+			}
+			return [pt1,pt3,pt4,pt2];
+		}
+		return null;
+	},
+	/*
+	获取pt1到pt2的连接点，不能连通时返回null,能连通时返回经过的4个点，有可能有重合的点，返回的点用于画连接线
+	*/
+	getPath:function(pt1,pt2){
+		//开始搜索前对pt1,pt2排序
+		var tempArr=this.sortPt(pt1, pt2);
+		pt1=tempArr[0];
+		pt2=tempArr[1];
+		//end 排列
+		var result=false;//是否连接
+		result=this.closed(pt1,pt2)||this.isLineClear(pt1,pt2);
+		if(result){
+			return [pt1,pt2];
+		}
+		result=this.borderCellPath(pt1,pt2);
+		if(result!=null){
+			return result;
+		}
+		/**
+		构造4个点，tp1为pt1,tp4为pt2,tp2和tp3为中间点，先垂直搜索，即tp2与tp1同列（x轴相同），tp3与tp4同列
+		然后再横向搜索，即tp2与tp1同行（y轴相同）,tp3与tp4相同，
+		若tp1与tp2，tp2与tp3,tp3与tp4同时连通，则表示pt1与pt2最多拐两次弯可连通。tp1与tp2,tp3与tp4可能重合。
+		
+		这个不是最短路径
+		*/
+		var tp1=pt1;
+		var tp4=pt2;
+		var tp2;
+		var tp3;
+		for(var i=-1;i<=config.Y_NUM;i++){
+			tp2=new point(tp1.px,i);
+			tp3=new point(tp4.px,i);
+			if(!((this.isEmpty(tp2)||tp1.isSamePosition(tp2))&&(this.isEmpty(tp3)||tp3.isSamePosition(tp4)))){
+				continue;//如果中单位单不为空并且不与选择点重合，则一定不行
+			}
+			
+			if(this.isLineClear(tp1,tp2)&&this.isLineClear(tp2,tp3)&&this.isLineClear(tp3,tp4)){
+				return [tp1,tp2,tp3,tp4];
+			}
+		}
+		for(var i=-1;i<=config.X_NUM;i++){
+			tp2=new point(i,tp1.py);
+			tp3=new point(i,tp4.py);
+			if(!((this.isEmpty(tp2)||tp1.isSamePosition(tp2))&&(this.isEmpty(tp3)||tp3.isSamePosition(tp4)))){
+				continue;
+			}
+			if(this.isLineClear(tp1,tp2)&&this.isLineClear(tp2,tp3)&&this.isLineClear(tp3,tp4)){
+				return [tp1,tp2,tp3,tp4];
+			}
+		}
+		return null;
+	} //end getPath 
+}
+/*
+ * 绘制游戏地图，
+ */
+function drawmap(){
+	ctx.strokeStyle=config.mpaLineColor;
+	ctx.lineWidth=config.mpaLineWidth;
+	//绘制坚线
+	for(var i=0;i<config.X_NUM;i++){
+		ctx.beginPath();
+		ctx.moveTo(i*config.cellWidth,0); 
+		ctx.lineTo(i*config.cellWidth,config.height);
+		ctx.stroke();
+	}
+	//绘制横线
+	for(var i=0;i<config.Y_NUM;i++){
+		ctx.beginPath();
+		ctx.moveTo(0,i*config.cellHeight); 
+		ctx.lineTo(config.width,i*config.cellHeight);
+		ctx.stroke();
+	}
+}
+/**
+ * 选择的点
+ */
+function point(px,py,value){
+	this.px=px;
+	this.py=py;
+	this.value=value;
+	this.isSamePosition=isSamePosition;
+	this.isSameValue=isSameValue;
+	function isSamePosition(pt){
+		if(this.px==pt.px&&this.py==pt.py){
+			return true;
+		}else{
+			return false;
+		}
+	}
+	function isSameValue(pt){
+		if(this.value==pt.value){
+			return true;
+		}else{
+			return false;
+		}
+	}
+}
+
+/**
+ * 用户响应
+ */
+ var resp={
+		//是否在选择第一个图片
+		isFirstCell:true,
+		pt1:null,//选择的第一个点
+		pt2:null,
+		pathPts:null,
+		//点击的图片
+		getCurrentCell:function(event){
+			var cellpx=Math.floor(event.x/config.cellWidth);
+			if(cellpx>=config.X_NUM){
+				cellpx=config.X_NUM-1;//不正常情况
+				console.debug('cellPx:'+cellpx+",event.x:"+event.x);
+			}
+			var cellpy=Math.floor(event.y/config.cellHeight);
+			if(cellpy>=config.Y_NUM){
+				cellpy=config.Y_NUM-1;//不正常情况
+				console.debug('cellpy:'+cellpy+",event.y:"+event.y);
+			}
+			return new point(cellpx,cellpy,logic.contentArr[cellpx][cellpy]);
+		},
+		changeSelectBoarderColor:function(cellPoint){
+			ctx.strokeStyle=config.selectedLineColor;
+			ctx.lineWidth=config.mpaLineWidth;
+			var x=config.cellWidth*cellPoint.px;
+			var y=config.cellHeight*cellPoint.py;
+			//应先清除原边框，现在这样直接画，画第二次颜色会变深，应是原来的线有影响
+			ctx.strokeRect(x,y,config.cellWidth,config.cellHeight);
+		},
+		clearLine: function(pointArr){
+			if(!pointArr.length){
+				console.debug('请传入多个点构成的数组');
+				return;
+			}
+			if(pointArr.length==2){
+				var tempArr=logic.sortPt(pointArr[0], pointArr[1]);
+				var pt1=tempArr[0];
+				var pt2=tempArr[1];
+				if(pt1.x==pt2.x){//一条件竖线
+					ctx.clearRect(pt1.x-1,pt1.y,2,pt2.y-pt1.y);//减1对应线宽为1、2，实际发现线宽为1，2画的线宽度一样，但颜色深浅不一
+				}else if(pt1.y==pt2.y){
+					ctx.clearRect(pt1.x,pt1.y-1,pt2.x-pt1.x,2);
+				}
+			}else if(pointArr.length>2){
+				this.clearLine([pointArr[0],pointArr[1]]);
+				pointArr.shift();
+				this.clearLine(pointArr);
+			}else{
+				console.debug('请传入多个点构成的数组');
+			}		
+		},
+		clearCell: function(cellPoint){
+			ctx.clearRect(config.cellWidth*cellPoint.px,config.cellHeight*cellPoint.py,config.cellWidth,config.cellHeight);
+		},
+		clearCellBorder: function(cellPoint){
+			var pt1={x:config.cellWidth*cellPoint.px,y:config.cellHeight*cellPoint.py};
+			var pt2={x:pt1.x+config.cellWidth,y:pt1.y};
+			var pt3={x:pt2.x,y:pt2.y+config.cellHeight};
+			var pt4={x:pt1.x,y:pt1.y+config.cellHeight};
+			var pt5=pt1;
+			this.clearLine([pt1,pt2,pt3,pt4,pt5]);
+		},
+		restoreBoarderColor:function(cellPoint){
+			ctx.strokeStyle=config.mpaLineColor;
+			var x=config.cellWidth*cellPoint.px;
+			var y=config.cellHeight*cellPoint.py;
+			this.clearCellBorder(cellPoint);
+			ctx.strokeRect(x,y,config.cellWidth,config.cellHeight);
+		},
+		cellCenter: function(pt){
+			var px=pt.px*config.cellWidth+config.cellWidth/2;
+			var py=pt.py*config.cellHeight+config.cellHeight/2;
+			return {x:px,y:py};
+		},
+		/*
+		     画连接线
+		*/
+		drawConnectLine:function(arguArr){
+			//var arguArr=arguments;
+			if(arguArr.length<2){
+				return;
+			}
+			ctx.strokeStyle=config.connectLineColor;
+			ctx.beginPath();
+			var pos=this.cellCenter(arguArr[0]);
+			ctx.moveTo(pos.x,pos.y);
+			for(var i=1;i<arguArr.length;i++){
+				pos=this.cellCenter(arguArr[i]);
+				ctx.lineTo(pos.x,pos.y);
+			}
+			ctx.stroke();
+		},
+		/**
+			清除连接线
+		*/
+		clearConnectLine: function(pathPoints){
+			//清除线
+			if(!pathPoints.length||pathPoints.length<2){
+				console.debug('请传入连接点数组');
+				return;
+			}
+			var pointArr=new Array(this.cellCenter(pathPoints[0]));
+			for(var i=1;i<pathPoints.length;i++){
+				if(!pathPoints[i].isSamePosition(pointArr[pointArr.length-1])){
+					pointArr.push(this.cellCenter(pathPoints[i]));
+				}
+			}
+			if(pointArr.length>=2){
+				this.clearLine(pointArr);
+			}else{
+				console.debug('连接点小于2个');
+			}
+			
+		},
+		clear:function(){
+			var pathPoints=this.pathPts;
+			//清除线
+			this.clearConnectLine(pathPoints);
+			this.clearCell(pathPoints[0]);
+			this.clearCell(pathPoints[pathPoints.length-1]);
+			this.restoreBoarderColor(pathPoints[0]);
+			this.restoreBoarderColor(pathPoints[pathPoints.length-1]);
+			//将数组中这两点置为空
+			logic.set2PointEmpty(this.pt1,this.pt2);
+			this.isFirstCell=true;
+		},
+		//注册用户点击事件
+		clickCanvas:function(canvas,_event){
+			var event = _event || window.event;//为了兼容IE的写法
+			var clickp=this.getCurrentCell(_event);		
+			if(this.isFirstCell){//现在选的是第一个
+				this.changeSelectBoarderColor(clickp);
+				this.isFirstCell=false;//再选就不是第一个了，设为false
+				this.pt1=clickp;
+			}else{
+				var re=this.pt1.isSamePosition(clickp);
+				if(re){//再次点击已经选择的第一个点
+					return;
+				}
+				//两点内容不同，取消第一个点的选择，返回
+				if(!this.pt1.isSameValue(clickp)){
+					this.restoreBoarderColor(this.pt1);
+					this.isFirstCell=true;
+					return;
+				}
+				
+				this.pt2=clickp;
+				//检测两点是否连通
+				var pathPoints=logic.getPath(this.pt1,this.pt2);
+				console.debug(pathPoints);
+				if(!pathPoints){//不连通,取消第一个点的选择，返回
+					this.restoreBoarderColor(this.pt1);
+					this.isFirstCell=true;
+					return;
+				}				
+				//若连通，改变边框颜色，画线，清除线
+				this.changeSelectBoarderColor(clickp);
+				this.drawConnectLine(pathPoints);
+				//this.clear(pathPoints);
+				//这样看不出现上面画的效果
+				this.pathPts=pathPoints;
+				setTimeout("resp.clear()",800);
+				
+				this.isFirstCell=true;
+			}
+		},
+		
+};
+function test(){
+	logic.contentArr[0][0]=1;
+	logic.contentArr[0][2]=1;
+	var pt1=new point(1,0);
+	var pt2=new point(0,1);
+	var ptArr=logic.getPath(pt1,pt2);
+	console.debug(ptArr);
+}
+</script>
+<style type="text/css">
+body{
+overflow:hidden;/*阻止滚动栏，否则点击坐标获取不正确 */
+}
+</style>
+</head>
+<body onload = "pageLoaded();">
+<div>
+<canvas onclick="resp.clickCanvas(this,event)" width = "320" height = "480" id = "gamecanvas" style = "border:black 1px solid;">
+Your browser does not support HTML5 Canvas. Please shift to another browser.
+</canvas>
+<button onclick="test()">测试</button>
+</div>
+
+</body>
+</html>
