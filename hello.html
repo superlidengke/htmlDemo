@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html ng-app>
+<head>
+<title>Listing 2-3</title>
+<script src="lib/angular.min.js"></script>
+</head>
+<body>
+<p>Hello {{'Wor' + 'ld'}}</p>
+<label>City: <input ng-model="city" type="text" /></label>
+<p>You entered: {{city}}</p>
+<p ng-show="true">Paragraph 1, can you see me?</p>
+<p ng-show="false">Paragraph 2, can you see me?</p>
+<p ng-show="1 == 1">Paragraph 3, can you see me?</p>
+<p ng-show="1 == 2">Paragraph 4, can you see me?</p>
+<button ng-click="count = count + 1" ng-init="count = 0">
+Increment
+</button>
+count: {{count}}
+
+<h1>Expression Samples</h1>
+<!-- Basic arithmetic -->
+<p>6 + 4 = {{6 + 4}}</p>
+<!-- Using a JavaScript string method -->
+<p>{{"Beginning AngularJS".toUpperCase()}}</p>
+<!-- Searching for an occurence of 'D' -->
+<p>{{"ABCDEFG".indexOf('D')}}</p>
+<!-- Ternary operation -->
+<p>{{1==1 ? "Red" : "Blue"}}</p>
+</body>
+</html>
