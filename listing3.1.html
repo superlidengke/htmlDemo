@@ -38,10 +38,19 @@
 	//do not use direct object creation with the
 	//new keyword
 	var myLogger = Logger.getInstance();
-	myLogger.logWarning("Memory use nearing maximum!");
+	var re=myLogger.logWarning("Memory use nearing maximum!");
+	console.debug(re)
+	
+
+	function MyFirstCtrl($scope) {
+		var employees = [ 'Catherine Grant', 'Monica Grant',
+				'Christopher Grant', 'Jennifer Grant' ];
+		$scope.ourEmployees = employees;
+	}
 </script>
 </head>
-<body>
-
+<body ng-controller='MyFirstCtrl'>
+<h2>Number of Employees: {{ ourEmployees.length}}</h2>
+<p ng-repeat="employee in ourEmployees">{{employee}}</p>
 </body>
 </html>
