@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html ng-app>
+<head>
+<title>Listing 4-1</title>
+<script src="lib/angular.min.js"></script>
+<script type="text/javascript">
+function MyFilterDemoCtrl($scope) {
+	var someData = {
+	firstName: 'JENNA',
+	surname: 'GRANT',
+	dateJoined: new Date(2010, 2, 23),
+	consumption: 123.659855,
+	plan: 'super-basic-plan',
+	// Last 12 months of data usage
+	monthlyUsageHistory:
+	[123.659855,
+	89.645222,
+	97.235644,
+	129.555555,
+	188.699854,
+	65.652545,
+	89.6452223,
+	97.235654,
+	129.555575,
+	129.555556,//will show error if there're same values,need other operation
+	188.699855,
+	65.65254551]
+	};
+	$scope.data = someData;
+}
+	
+</script>
+</head>
+<body ng-controller='MyFilterDemoCtrl'>
+<p>
+<!-- Unfiltered data -->
+<strong>First Name</strong>: {{data.firstName}}<br/>
+<strong>Surname:</strong> {{data.surname}}
+</p>
+<p>
+<!-- Filtered data -->
+<strong>First Name</strong>: {{data.firstName | lowercase}}<br/>
+<strong>Surname:</strong> {{data.surname | lowercase }}
+</p>
+<p>
+Consumption: {{data.consumption }}<br/>
+Consumption: {{data.consumption | number }}
+</p>
+<p>Data used this quarter:<strong> {{ data.consumption | number:2 }} </strong>gigabytes</p>
+
+<p>Original:<strong> {{ data.dateJoined }} </strong></p>
+<p>medium:<strong> {{ data.dateJoined | date:'medium'}} </strong></p>
+<p>mediumDate:<strong> {{ data.dateJoined | date:'mediumDate'}} </strong></p>
+<p>shortDate:<strong> {{ data.dateJoined | date:'shortDate'}} </strong></p>
+<p>This customer joined in the month of {{ data.dateJoined | date:'MMMM'}} on a {{
+data.dateJoined | date:'EEEE'}} at {{ data.dateJoined | date:'ha'}}</p>
+<h2>Gigabytes used over the last 5 months</h2>
+<ul>
+<li ng-repeat="gigabytes in data.monthlyUsageHistory | limitTo:3">
+{{ gigabytes | number:2}}
+</li>
+</ul>
+</body>
+</html>
