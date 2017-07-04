@@ -6,10 +6,28 @@
 <script src="lib/angular.min.js"></script>
 <script src="js/myAppModule.js"></script>
 <script type="text/javascript">
-	
+
+	function stripDashes(txt) {
+		return txt.split('-').join(' ');
+	};
+	console.log(stripDashes("super-basic-plan"));
+	console.log(stripDashes("something-with-a-lot-more-dashes-plan"));
+	console.log(stripDashes("noDashesPlan"))
+	function toTitleCase(str) {
+		return str.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.
+			substr(1).toLowerCase();});
+	}
+	console.log(toTitleCase("jennifer"));
+	console.log(toTitleCase("jENniFEr"));
+	console.log(toTitleCase("jENniFEr amanda Grant"));
 </script>
 </head>
 <body ng-controller='MyFilterDemoCtrl'>
-
+<p>Plan type: {{data.plan}}</p>
+<p>Plan type: {{data.plan | stripDashes}}</p>
+<!-- Display customer name in title case -->
+<p>First Name: {{data.firstName | toTitleCase}}</p>
+<p>Surname: {{data.surname | toTitleCase}}</p>
+<p>Full Name: {{ data.firstName + ' '+data.surname | toTitleCase}}</p>
 </body>
 </html>
