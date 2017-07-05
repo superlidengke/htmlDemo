@@ -41,3 +41,13 @@ myAppModule.controller('MyFilterDemoCtrl', function($scope) {
 			};
 			$scope.data = someData;
 });
+angular.module('myAppModule').controller('myProductDetailCtrl',
+		function($scope) {
+			// Hide colors by default
+			$scope.isHidden = true;
+			// a function, placed into the scope, which
+			// can toggle the value of the isHidden variable
+			$scope.showHideColors = function() {
+				$scope.isHidden = !$scope.isHidden;
+			}
+		});
