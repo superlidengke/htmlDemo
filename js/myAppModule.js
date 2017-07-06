@@ -51,3 +51,39 @@ angular.module('myAppModule').controller('myProductDetailCtrl',
 				$scope.isHidden = !$scope.isHidden;
 			}
 		});
+myAppModule.controller('myDemoCtrl', function ($scope) {
+	$scope.colorsArray = ['red', 'green', 'blue', 'purple', 'olive']
+	}
+	);
+myAppModule
+		.directive(
+				'colorList',
+				function() {
+					return {
+						restrict : 'AE',
+						template : "<button ng-click='showHideColors()' type='button'>"
+								+ "{{isHidden ? 'Show Available Colors' : 'Hide Available Colors'}}"
+								+ "</button><div ng-hide='isHidden' id='colorContainer'>"
+								+ "</div>",
+						link : function($scope, $element) {
+							// set default state of hide/show
+							$scope.isHidden = true;
+							// add function to manage hide/show state
+							$scope.showHideColors = function() {
+								$scope.isHidden = !$scope.isHidden;
+							}
+							// DOM manipulation
+							var colorContainer = $element.find('div');
+							angular.forEach(
+									$scope.colorsArray,
+											function(color) {
+												var appendString = "<div style='background-color:"
+														+ color
+														+ "'>"
+														+ color
+														+ "</div>";
+												colorContainer.append(appendString);
+											});
+						}
+					}
+				});
