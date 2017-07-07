@@ -42,7 +42,7 @@ color: green;
 			<span ng-show="lastNameInvalid">Please enter a value for Last name</span><br /> 
 			<input type="email" placeholder="Email" name="email" ng-model="person.email" required>
 			<span ng-show="emailInvalid"><br/>A valid email address is required</span> <br /> 
-			<select name="level" ng-model="person.levels" ng-options="obj.value as obj.label for obj in person.channels">
+			<select name="research" ng-model="person.levels" ng-options="obj.value as obj.label for obj in person.channels">
 				<option value="">Where did you hear about us?</option>
 			</select>
 			<span ng-show="researchInvalid"><br/>Please tell us where you heard about us</span> <br /> 
