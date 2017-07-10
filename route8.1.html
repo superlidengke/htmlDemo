@@ -20,6 +20,10 @@
 			controller : 'aboutController'
 		}).when('/contact', {
 			// route for the contact page
+			templateUrl: 'pages/contact.html',
+			controller: 'contactController'
+		}).when('/contact/:subject', {
+			// route for the contact page with subject param
 			templateUrl : 'pages/contact.html',
 			controller : 'contactController'
 		}).otherwise({
@@ -34,13 +38,21 @@
 	app.controller('aboutController', function($scope) {
 		$scope.message = 'Find out more about me.';
 	});
-	app.controller('contactController', function($scope) {
-		$scope.message = 'Contact us!';
+	app.controller('contactController', function($scope,$routeParams) {	
+		var subject = '';
+		if ($routeParams['subject'] == "learn") {
+			subject = 'I want to learn more about your services';
+		} else if ($routeParams['subject'] == "quote") {
+			subject = 'I would like to get a free quote';
+		}
+		$scope.subject = subject;
 	});
-	app.controller('notFoundController',function($scope, $location) {
-		$scope.message = 'There seems to be a problem finding the page you wanted';
-		$scope.attemptedPath = $location.path();
-	});
+	app.controller(
+					'notFoundController',
+					function($scope, $location) {
+						$scope.message = 'There seems to be a problem finding the page you wanted';
+						$scope.attemptedPath = $location.path();
+					});
 </script>
 </head>
 <body ng-controller="homeController">
