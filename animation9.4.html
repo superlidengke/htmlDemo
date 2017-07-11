@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html ng-app="app">
+<head>
+<title>Applying animations</title>
+<script src="lib/angular.min.js"></script>
+<script src="lib/angular-animate.js"></script>
+<script>
+var app = angular.module('app', ['ngAnimate']);
+app.controller('homeController', function ($scope) {
+$scope.on = false;
+});
+</script>
+<style>
+/* starting */
+.my-first-animation.ng-enter {
+transition: 1.5s all;
+opacity: 0;
+}
+/* ending */
+.my-first-animation.ng-enter.ng-enter-active {
+opacity: 1;
+}
+</style>
+</head>
+<body ng-controller="homeController">
+<button ng-click="on=!on">Toggle Content</button>
+<div class="my-first-animation" ng-if="on">
+This content will fade in over half a second.
+</div>
+</body>
+</html>
