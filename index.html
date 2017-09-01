@@ -7,15 +7,41 @@
 <script type="text/javascript">
 	var context;
 	var source;
+	var processor;
 	var bufferCache;
 	var startOffset = 0;
 	var startTime = 0; 
 	var stopped=false;
+	var volume=[];
+	function putAudio(data){
+		volume.push(data);
+		if(volume.length>300){
+			volume.shift()
+		}
+		
+			var lastEles=volume.slice(volume.length-20,volume.length);
+			var low=true;
+			lastEles.forEach(function(item){
+				if(item>0.01){
+					low=false;
+				}
+			});
+			
+		
+		if(!stopped&&low){
+			console.log("stop !!!")
+		}
+		if(!low && stopped){
+			console.log("start play")
+		}
+		
+	}
 	var contextClass = (window.AudioContext || window.webkitAudioContext
 			|| window.mozAudioContext || window.oAudioContext || window.msAudioContext);
 	if (contextClass) {
 		// Web Audio API is available.
 		context = new contextClass();
+		processor = context.createScriptProcessor(1024 * 8, 1, 1);
 		getData();
 	} else {
 		// Web Audio API is not available. Ask the user to use a supported browser.
@@ -35,7 +61,20 @@
 		    	bufferCache=buffer;
 		        source.buffer = buffer;
 		    	//播放声音
-		        source.connect(context.destination);
+		        source.connect(processor);
+		        processor.connect(context.destination);
+		    	processor.onaudioprocess = function(e) {
+					//获取输入和输出的数据缓冲区
+					var input = e.inputBuffer.getChannelData(0);
+					var output = e.outputBuffer.getChannelData(0);
+					for (var i = 0; i < input.length; i++) {
+						output[i] = input[i];
+						if(i%1024==0){
+							putAudio(input[i])
+						}
+					}
+					
+		    	}
 		        startTime=context.currentTime;
 		        source.start(0);   
 		        stopped=false;
@@ -43,7 +82,7 @@
 		      function(e){ console.log("Error with decoding audio data" + e.err); });
 		  }
 		  request.send();
-		}
+	}
 	function stop(){
 		console.log("stop play")
 		startOffset += context.currentTime - startTime;
@@ -67,9 +106,32 @@
 			$("#playControl").text("Play");
 		}
 	}
+	function draw(){
+		requestAnimationFrame(draw);
+		var playTime=context.currentTime;
+		//$('#board').text(volume)
+		var ctx = canvas.getContext("2d");
+		if(volume.length>=300){
+			ctx.clearRect(0, 0, 300, 300);
+		}
+		ctx.beginPath();
+		for(var i=0;i<volume.length;i++){
+			ctx.moveTo(i,150);
+			ctx.lineTo(i,150-150*volume[i]);	
+		}
+		ctx.stroke();
+		
+	}
 </script>
 </head>
 <body>
 	<button id="playControl" onclick="playControl()">Stop</button>
+	<canvas id="canvas" width="800" height="300"
+		style="border: 1px solid #000000;"></canvas>
+	<div id = "board"></div>
+	<script type="text/javascript">
+		draw();
+	</script>
+	
 </body>
 </html>
