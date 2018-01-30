@@ -1,0 +1,56 @@
+<html ng-app="myApp">
+<head>
+    <title></title>
+</head>
+<body  ng-controller='textController'>
+<p>{{message.someText}}</p>
+<form ng-controller="SomeController">
+    <input type="checkbox" ng-model="youCheckedIt">
+    <br/>
+    {{youCheckedIt}}
+</form>
+<form ng-controller="StartUpController">
+    Starting: <input type="number" ng-model="funding.startingEstimate">
+    Recommendation: {{funding.needed}}
+</form>
+
+<form ng-submit="requestFunding()" ng-controller="submitController">
+    Starting: <input type="number" ng-change="computeNeeded()" ng-model="startingEstimate">
+    Recommendation: {{needed}}
+    <!-- the default button type is submit -->
+    <button>Fund my startup!</button>
+    <button type="button" ng-click ="reset()" >Reset</button>
+</form>
+
+<script src="../lib/angular.min.js"></script>
+<script>
+    var myAppModule = angular.module('myApp', []);
+    myAppModule.controller('textController',function ($scope) {
+        var message = {};
+        message.someText = 'Start journey.';
+        $scope.message = message;
+    })
+    myAppModule.controller('SomeController',function ($scope) {
+        $scope.youCheckedIt = true
+    })
+    myAppModule.controller('StartUpController',function ($scope) {
+        $scope.funding = { startingEstimate: 0 };
+        computeNeeded = function() {
+            $scope.funding.needed = $scope.funding.startingEstimate * 10;
+        };
+       $scope.$watch('funding.startingEstimate', computeNeeded);
+    });
+    myAppModule.controller('submitController',function ($scope) {
+        $scope.computeNeeded = function() {
+            $scope.needed = $scope.startingEstimate * 10;
+        };
+        $scope.requestFunding = function() {
+            window.alert("Sorry, please get more customers first.");
+        };
+        $scope.reset = function() {
+            $scope.startingEstimate = 0;
+        }
+    });
+</script>
+</body>
+</html>
