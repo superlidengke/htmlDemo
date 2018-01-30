@@ -1,0 +1,113 @@
+<!-- if writing ng-app = "myApp" when not defined it in the javascript, it will show error : Failed to instantiate module myApp due to:  -->
+<html ng-app>
+<head>
+    <title></title>
+    <style>
+        .menu-disabled-true {
+            color: gray;
+        }
+        .error {
+            background-color: red;
+        }
+        .warning {
+            background-color: yellow;
+        }
+        .selected {
+            background-color: lightgreen;
+        }
+    </style>
+</head>
+<body>
+    <div ng-controller='StudentListController'>
+        <ul>
+            <li ng-repeat='student in students'>
+                <a ng-href='/student/view/{{student.id}}'>{{student.name}}</a>
+                <!-- use src, browser will load img before angular js render the value-->
+                <img ng-src="/images/student/{{student.id}}">
+            </li>
+        </ul>
+        <button ng-click="insertTom()">Insert</button>
+    </div>
+    <table ng-controller='AlbumController'>
+        <tr ng-repeat='track in album'>
+            <td>{{$index + 1}}</td>
+            <td>{{track.name}}</td>
+            <td>{{track.duration}}</td>
+        </tr>
+    </table>
+    <div ng-controller='DeathrayMenuController'>
+        <button ng-click='toggleMenu()'>Toggle Menu</button>
+        <ul ng-show='menuState.show'>
+            <li class='menu-disabled-{{isDisabled}}' ng-click='stun()'>Stun</li>
+            <li ng-click='disintegrate()'>Disintegrate</li>
+            <li ng-click='erase()'>Erase from history</li>
+        </ul>
+    </div>
+    <div ng-controller='HeaderController'>
+        ...
+        <div ng-class='{error: isError, warning: isWarning}'>{{messageText}}</div>
+        ...
+        <button ng-click='showError()'>Simulate Error</button>
+        <button ng-click='showWarning()'>Simulate Warning</button>
+    </div>
+    <table ng-controller='RestaurantTableController'>
+        <tr ng-repeat='restaurant in directory' ng-click='selectRestaurant($index)'
+            ng-class='{selected: $index==selectedRow}'>
+            <td>{{restaurant.name}}</td>
+            <td>{{restaurant.cuisine}}</td>
+        </tr>
+    </table>
+<script src="../lib/angular.min.js"></script>
+<script>
+    var students = [{name:'Mary Contrary', id:'1'},
+        {name:'Jack Sprat', id:'2'},
+        {name:'Jill Hill', id:'3'}];
+    function StudentListController($scope) {
+        $scope.students = students;
+        $scope.insertTom = function () {
+            $scope.students.splice(1, 0, {name:'Tom Thumb', id:'4'});
+        };
+    }
+    var album = [{name:'Southwest Serenade', duration: '2:34'},
+        {name:'Northern Light Waltz', duration: '3:21'},
+        {name:'Eastern Tango', duration: '17:45'}];
+    function AlbumController($scope) {
+        $scope.album = album;
+    }
+    function DeathrayMenuController($scope) {
+        $scope.menuState={}
+        $scope.menuState.show = false;
+        $scope.toggleMenu = function() {
+            $scope.menuState.show = !$scope.menuState.show;
+        };
+        $scope.stun = function() {
+            // stun the target, then disable menu to allow regeneration
+            $scope.isDisabled = 'true';
+        };
+// death ray functions left as exercise to reader
+    }
+    function HeaderController($scope) {
+        $scope.isError = false;
+        $scope.isWarning = false;
+        $scope.showError = function() {
+            $scope.messageText = 'This is an error!';
+            $scope.isError = true;
+            $scope.isWarning = false;
+        };
+        $scope.showWarning = function() {
+            $scope.messageText = 'Just a warning. Please carry on.';
+            $scope.isWarning = true;
+            $scope.isError = false;
+        };
+    }
+    function RestaurantTableController($scope) {
+        $scope.directory = [{name:'The Handsome Heifer', cuisine:'BBQ'},
+            {name:"Green's Green Greens", cuisine:'Salads'},
+            {name:'House of Fine Fish', cuisine:'Seafood'}];
+        $scope.selectRestaurant = function(row) {
+            $scope.selectedRow = row;
+        };
+    }
+</script>
+</body>
+</html>
