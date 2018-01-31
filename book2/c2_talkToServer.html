@@ -1,0 +1,24 @@
+<html ng-app>
+<head>
+    <title>Your Shopping Cart</title>
+</head>
+<body ng-controller="ShoppingController">
+<h1>Shop!</h1>
+<table>
+    <tr ng-repeat='item in items'>
+    <td>{{item.title}}</td>
+    <td>{{item.description}}</td>
+    <td>{{item.price | currency}}</td>
+    </tr>
+</table>
+
+<script src="../lib/angular.min.js"></script>
+<script>
+    function ShoppingController($scope, $http) {
+        $http.get('products').success(function(data, status, headers, config) {
+            $scope.items = data;
+        });
+    }
+</script>
+</body>
+</html>
